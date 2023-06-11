@@ -1,0 +1,11 @@
+name: Publish Document
+title:
+username:
+account: rpubs
+server: rpubs.com
+hostUrl: rpubs.com
+appId: https://api.rpubs.com/api/v1/document/1053279/6d15384b3b8649aa88f048ffbedcf882
+bundleId: https://api.rpubs.com/api/v1/document/1053279/6d15384b3b8649aa88f048ffbedcf882
+url: http://rpubs.com/paujedynak/1053279
+when: 1694777454.16386
+lastSyncTime: 1694777454.16387

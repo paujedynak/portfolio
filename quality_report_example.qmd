@@ -1,0 +1,330 @@
+---
+title: "Chemical compounds study"
+subtitle: "Quality Control Report"
+author: "Paulina Jedynak (paulinaalicja.jedynak@ISGlobal.org)"
+date: "12 June 2023"
+format:
+  html:
+    embed-resources: true
+biblio-style: apsr
+fontfamily: mathpazo
+fontsize: 11pt
+geometry: margin = 1in
+keywords: Cohort; chemical compounds;
+bibliography: lib.bib
+execute:
+  echo: false
+  message: false
+  warning: false
+abstract: "Disclaimer: this is a partially invented analysis of simulated data. The presented descriptions or conclusions may not be accurate and may not reflect scientifically correct approach, they have an illustrative purpose only."
+---
+
+```{r, include = FALSE}
+if (!"pacman" %in% installed.packages()[,"Package"]) {
+  install.packages("pacman")
+}
+
+# Install and load packages
+pacman::p_load(car, 
+               corrplot, 
+               DataExplorer, 
+               factoextra, 
+               ggpubr, 
+               ggrepel, 
+               here, 
+               Hmisc, 
+               janitor, 
+               kableExtra, 
+               knitr, 
+               magrittr, 
+               mycor, 
+               naniar, 
+               rio, 
+               tidyverse, 
+               scales, 
+               stats, 
+               tableone)
+```
+
+```{r, include = FALSE}
+# Source analyses function
+source(here("R/quality_report_analyses.R"))
+```
+
+
+
+1.  **Aim**
+
+The aim of the analysis was to assess concentrations of compounds from biological samples collected from a cohort subjects.\
+
+2.  **Sample size and selection of samples for the analysis**
+
+In total, 957 samples from 857 unique participants were collected (**@fig-flowchart**):
+
+```{r}
+#| label: fig-flowchart
+#| fig-cap: Study flowchart.
+#| out-width: "70%"
+include_graphics("images/Figure_1_flowchart_compounds.jpg")
+```
+
+3.  **Descriptive analysis of compounds**\
+
+a.  **Limits of detection (LOD) and quantification (LOQ)**
+
+```{r kable}
+#| label: tbl-percLOD
+#| tbl-cap: Number and percentage of values above the LOD and above LOQ for compound amounts adjusted for sample weight (ng/g).
+comp_LOD_table <- comp_det_rates_table %>% 
+  filter(samplew_adj == "adjusted") %>% 
+  ungroup() %>% 
+  select(-samplew_adj)
+
+kable(comp_LOD_table, col.names = c("Compound", "n", "%<LOD", "n<LOD", "%<LLOQ", "n<LLOQ", "%>ULOQ", "n>ULOQ")) %>%
+  kable_styling(full_width = F)
+```
+
+LODs and lower and upper limits of quantification (LLOQ, ULOQ) for each compound are indicated in **@tbl-percLOD**. LODs and LOQs were calculated for 50 mg of sample. Compounds concentrations provided by the analytical lab were adjusted for sample weight (raw concentration was divided by the sample weight). For a reference see [@Author2021].
+
+b.  **Numerical summary of compounds concentrations**
+
+```{r kable}
+#| label: tbl-numsum
+#| tbl-cap: Compounds concentrations.
+comp_perc_table <- compounds_descr_perc %>% 
+  select(compound_name, !contains("nadjusted"))
+
+kable(comp_perc_table, col.names = c("Compound", "Min", "5%", "25%", "Median", "Mean", "75%", "95%", "Max")) %>%
+  kable_styling(full_width = F)
+```
+
+Detection rate of all compounds was very high. Compound 7 and Compound 8 are the two compounds with the highest number of \<LLOQ values (**@tbl-numsum**). Compound 9 had a very high number of values \>ULOQ and this may be problematic (**@tbl-numsum**). Consider imputation.
+
+c.  **Compounds missing data**
+
+```{r}
+#| label: fig-missing
+#| fig-cap: Percentage of missing values per compound.
+#| fig-width: 8
+#| fig-height: 4
+#| message: false
+#| warning: false
+results_compounds_LOD_miss <- results_compounds_LOD %>% 
+  select(comp1_samplew:comp9_samplew)
+colnames(results_compounds_LOD_miss) <- compounds_names_long
+plot_missing(results_compounds_LOD_miss, ggtheme = theme_bw())
+```
+
+Only a few values for Compound 8 and Compound 1 were missing (**@fig-missing**). There were 7 samples (fakeID1, fakeID2, fakeID3, fakeID4, fakeID5, fakeID6, fakeID7) that were sent to the analytical lab but were not processed (due to too small amount of the sample or sample loss), and so they are not included in the QC report and will not be imputed. As for other samples, there were no missing values except for 2 values for Compound 8 and 4 values for Compound 1 that did not pass the quality control (see above). These values will not be imputed.
+
+d.  **Impact of data imputation**
+
+```{r}
+#| label: fig-imput
+#| fig-cap: Comparison of ln-transformed non-imputed and imputed values for samples adjusted and unadjusted for weight.
+#| fig-width: 10
+#| fig-height: 6
+#| message: false
+#| warning: false
+# Plot boxplots of the imputed and non-imputed ln-transformed distributions
+ggplot(plot_imp, aes(x = value, y = compound_name, fill = imputation)) +
+  geom_boxplot() + 
+  facet_wrap(~samplew_adj) +
+  theme_bw() +
+  labs(x = "ln(concentration value)") +
+  theme(text = element_text(size = 12),
+        axis.title.x = element_blank(),
+        axis.text.x = element_text(angle = 45, hjust = 1)) +
+  scale_x_continuous(labels = label_comma()) +
+  scale_fill_discrete(name = "Compound concentration", labels = c("Non-imputed", "Imputed")) +
+  coord_flip()
+```
+
+The imputed values ranges look sane.
+
+```{r}
+#| label: fig-imput-hist
+#| fig-cap: Histograms for imputed compound concentration values for samples adjusted and non-adjusted for weight.
+#| fig-width: 17
+#| fig-height: 5
+#| message: false
+#| warning: false
+# Plot compounds concentration values after imputation 
+adj_labs <- c("Non-adjusted", "Adjusted")
+names(adj_labs) <- c("nadjusted", "adjusted")
+results_compounds_i_long %>% 
+  ggplot(aes(x = ln_i_value)) +
+  geom_histogram(fill = "lightblue", color = "black") + 
+  facet_grid(samplew_adj~compound_name, labeller = labeller(samplew_adj = adj_labs)) +
+  theme_bw() +
+  theme(text = element_text(size = 14),
+        axis.title.x = element_blank(),
+        axis.text.x = element_text(angle = 45, hjust = 1))
+```
+
+
+
+
+e.  **Compounds correlation structure**
+
+```{r}
+#| label: fig-corr
+#| fig-cap: Correlation structure for the compounds.
+#| fig-width: 5
+#| fig-height: 5
+#| message: false
+#| warning: false
+# Plot correlations between compounds
+# make function that makes set colors
+col2 <- colorRampPalette(c("#053061", "#2166AC", "#4393C3",
+                           "#92C5DE", "#D1E5F0", "#FFFFFF",
+                           "#FDDBC7", "#F4A582", "#D6604D",
+                           "#B2182B", "#67001F"))
+
+corrplot(corr = corr_compounds$r,
+         p.mat = corr_compounds$P,
+         type = "full", 
+         insig = "pch", 
+         sig.level = 0.1, 
+         pch.cex = 0.9,
+         col = col2(200),
+         tl.col = "black",
+         tl.srt = 45,
+         tl.cex = 0.8)
+```
+
+As expected, the highest correlations are observed for Compound 1 and its metabolites and Compound 4 and its metabolites (**@fig-corr**).
+
+f.  **Outliers**
+
+Out of the final 830 available samples, there were 4 samples that contained outliers due to potential contamination in Compound 1 (fakeID9, fakeID10, fakeID11, fakeID12) and 2 in Compound 8 (fakeID13, fakeID14). These values were indicated by the analytical lab to be removed and we decided to follow this recommendation. These values were not included in the QC report and will not be imputed.
+
+One additional sample (fakeID15) was indicated by the analytical lab as an outlier for all metabolites, due to extremely low concentration of internal standard and this sample was removed prior to the following analyses, was not included in the QC report and will not be imputed.
+
+**PCA - individual contribution**
+
+```{r}
+#| label: fig-pca-ind
+#| fig-cap: PCA-based individual contribution (the quality of the individuals on the factor map).
+#| message: false
+#| warning: false
+# Colour individuals by contribution
+fviz_pca_biplot(res_pca, 
+                col.ind = "cos2",
+                geom = "point") +
+  scale_color_gradient2(low = "white", 
+                        mid = "blue",
+                        high = "red", 
+                        midpoint = 0.6) +
+  theme(text = element_text(size = 11))
+```
+
+After running a PCA, we see that the majority of variability (`r round(summary(res_pca)$importance["Proportion of Variance", "PC1"] * 100, 1)`%) is explained by the PCA 1 there are two more IDs that are potential outliers: fakeID16 and fakeID17 (see **@fig-pca-ind**). Analytical lab did not detect any reasons for these, so most probably these are biological and not technical outliers, however fakeID20 provided also a very low amount of sample (\<5mg). We recommend sensitivity analysis without these samples.
+
+**PCA - effect of covariates**
+
+```{r}
+#| label: fig-pca-covariates
+#| fig-cap: PCA analysis with potentially influential factors overlapped.
+#| message: false
+#| warning: false
+
+pca_plots <- list()
+
+for (var in c("batch", "coll_season", "sample_weight", "time_col_analysis")) {
+  
+  var_pca <- pull(data_PCA_cov, all_of(var))
+  
+  pca_plots[[var]] <- local({
+    
+    if (is.numeric(var_pca)) {
+      
+      # Continuous variables
+      plot <- fviz_pca_ind(res_pca,
+                           label = "var",
+                           col.ind = var_pca,
+                           legend.title = "",
+                           gradient.cols = c("blue", "white", "red"))
+      
+    } else {
+      
+      # Categorical variables
+      plot <- fviz_pca_ind(res_pca,
+                           label = "var",
+                           habillage = var_pca,
+                           addEllipses = TRUE,
+                           ellipse.level = 0.95,
+                           legend.title = "",
+                           repel = TRUE)
+    }
+    
+    plot <- plot +
+      labs(title = "")
+  })
+}
+
+ggarrange(pca_plots$batch,
+          pca_plots$time_col_analysis,
+          pca_plots$sample_weight,
+          pca_plots$coll_season,
+          labels = c("Batch no.", "Time from sample col. to analysis (days)", "Sample weight (mg)", "Sample col. season"),
+          hjust = -0.1,
+          font.label = list(size = 11),
+          ncol = 2, nrow = 2)
+```
+
+There is a strong effect of batch and sample weight, with little impact of other factors (**@fig-pca-covariates**).
+
+**Exploration of the sample weight effect**
+
+**Visual inspection of associations between compound concentrations and sample weight**
+
+```{r}
+#| label: fig-regr-weight
+#| fig-cap: Fitted associations between compounds' concentrations and sample weight.
+#| fig-width: 12
+#| fig-height: 8
+#| message: false
+#| warning: false
+# Distributions per compound - plots
+# Assign ID to max and min compound value
+data_plot <- results_compounds_i_long %>% 
+  select(ID, compound_name, value, ln_i_value, sample_weight) %>% 
+  group_by(compound_name) %>% 
+  mutate(ID = case_when(ln_i_value == max(ln_i_value, na.rm = TRUE) ~ "ID of potential outlier", 
+                        ln_i_value == min(ln_i_value, na.rm = TRUE) ~ "ID of potential outlier", 
+                        TRUE ~ ""))
+
+ggplot(data_plot, aes(x = sample_weight, y = ln_i_value, label = ID)) +
+  geom_point(color = "lightblue", shape = 1) +
+  theme(text = element_text(size = 15)) +
+  theme_bw() +
+  geom_text_repel(box.padding = 1, max.overlaps = Inf, fontface = "italic") +
+  labs(y = "ln(concentration value)") + 
+  facet_wrap(vars(compound_name), nrow = 4, scales = "free") +
+  geom_smooth(method = "loess")
+```
+
+
+fakeID18 seems like an outlier (**@fig-regr-weight**), but visual inspection is not accurate in this case. Analytical lab did not detect any reasons for these, so most probably this is a biological and not technical outlier. We recommend sensitivity analysis without this sample. 
+
+
+**Numerical analysis of the linear effects and correlation between compound concentrations and sample weight**
+
+```{r kable}
+#| label: tbl-LM-corr-weight
+#| tbl-cap: Regression estimates for single linear regressions with sample weight predicting compound concentrations. Only estimates for associations with p-value for overall effect <0.1 or linear association p-value < 0.1 were displayed.
+# Select factors with non-negligible correlation
+lm_cont_batch_eff_table <- lm_cont_batch_effects %>% 
+  left_join(batch_corr_effects, by = c("compound_name", "term")) %>% 
+  select(-term) %>% 
+  arrange(compound_name) %>% 
+  
+  # Select factors with non-negligible association
+  filter(p_val < 0.1)
+
+kable(lm_cont_batch_eff_table, col.names = c("Compound", "Estimate (CI)", "Overall p-val.", "rho")) %>% 
+   kable_styling(full_width = F)
+```
+
+## Bibliography
