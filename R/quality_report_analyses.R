@@ -19,22 +19,22 @@ source(here("R/functions.R"))
 ### Data preparation
 ## Load data
 # Original data on samples
-sample_orig <- import(here("data/data_sample/dataset_1.RDS"))
+sample_orig <- import(here("data", "data_sample", "dataset_1.RDS"))
 
 # Data on samples with corrected IDs
-sample <- import(here("data/data_sample/dataset_2.xlsx"))
+sample <- import(here("data", "data_sample", "dataset_2.xlsx"))
 
 # Data on covariates (par, BMI, active smoking)
-covariates <- import(here("data/data_sample/dataset_3.RDS"))
+covariates <- import(here("data", "data_sample", "dataset_3.RDS"))
 
 # Information on conc and del dates
-sample_dates <- import(here("data/data_sample/dataset_4.RDS"))
+sample_dates <- import(here("data", "data_sample", "dataset_4.RDS"))
 
 # Data on compounds returned from the lab
-results_compounds_cohort_1_cohort_2 <- import(here("data/data_compounds/dataset_5.xlsx"))
+results_compounds_cohort_1_cohort_2 <- import(here("data", "data_compounds", "dataset_5.xlsx"))
 
 # Data on LODs and LOQs
-LOD_LOQ <- import(here("data/data_compounds/LOD_LOQ_compounds.xlsx"))
+LOD_LOQ <- import(here("data", "data_compounds", "LOD_LOQ_compounds.xlsx"))
 
 
 ## Create compounds names and clean names list
