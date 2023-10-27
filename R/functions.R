@@ -26,10 +26,10 @@ compute_ancova <- function(model_data_long, b_factor) {
   
   ancova_tidy <- model_data_long %>%
     group_by(compound_name) %>%
-    group_modify(~broom::tidy(batch_effect_ancova(batch_factor = b_factor, .))) %>% 
+    group_modify(~tidy(batch_effect_ancova(batch_factor = b_factor, .))) %>% 
     ungroup() %>% 
     filter(term == b_factor) %>% 
-    dplyr::mutate(p_val_main_eff = p.value,
+    mutate(p_val_main_eff = p.value,
                   stat_main_eff = statistic) %>% 
     mutate_if(is.numeric, round, 2) %>%
     select(compound_name, term, stat_main_eff, p_val_main_eff)
@@ -66,7 +66,7 @@ compute_lm <- function(model_data_long, b_factor) {
   
   lmod_tidy <- model_data_long %>%
     group_by(compound_name) %>%
-    group_modify(~broom::tidy(batch_effect_lm(batch_factor = b_factor, .), conf.int = TRUE)) %>% 
+    group_modify(~tidy(batch_effect_lm(batch_factor = b_factor, .), conf.int = TRUE)) %>% 
     ungroup() %>%
     filter(term != "(Intercept)") %>% 
     mutate_if(is.numeric, round, 2) %>%
@@ -108,7 +108,7 @@ compute_corr <- function(model_data_long, b_factor) {
   
   corr_effect_pvalue <- model_data_long %>%
     group_by(compound_name) %>%
-    group_modify(~skimr::skim(batch_effect_cor(batch_factor = b_factor, .))) %>% 
+    group_modify(~skim(batch_effect_cor(batch_factor = b_factor, .))) %>% 
     ungroup() %>% 
     mutate(corr = numeric.mean) %>% 
     select(compound_name, corr)
