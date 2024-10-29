@@ -1,7 +1,7 @@
 ---
 title: "Chemical compounds study"
 subtitle: "Quality Control Report"
-author: "Paulina Jedynak (paulinaalicja.jedynak@ISGlobal.org)"
+author: "Paulina Jedynak (paulina.jedynak@gmail.com)"
 date: "12 June 2023"
 format:
   html:
@@ -16,7 +16,7 @@ execute:
   echo: false
   message: false
   warning: false
-abstract: "Disclaimer: this is a partially invented analysis of simulated data. The presented descriptions or conclusions may not be accurate and may not reflect scientifically correct approach, they have an illustrative purpose only."
+abstract: "Disclaimer: this is an exemplary quality report on simulated data. The presented descriptions or conclusions may not be accurate and may not reflect scientifically correct approach, they have an illustrative purpose only."
 ---
 
 ```{r, include = FALSE}
@@ -107,8 +107,6 @@ c.  **Compounds missing data**
 #| fig-cap: Percentage of missing values per compound.
 #| fig-width: 8
 #| fig-height: 4
-#| message: false
-#| warning: false
 results_compounds_LOD_miss <- results_compounds_LOD %>% 
   select(comp1_samplew:comp9_samplew)
 colnames(results_compounds_LOD_miss) <- compounds_names_long
@@ -124,8 +122,6 @@ d.  **Impact of data imputation**
 #| fig-cap: Comparison of ln-transformed non-imputed and imputed values for samples adjusted and unadjusted for weight.
 #| fig-width: 10
 #| fig-height: 6
-#| message: false
-#| warning: false
 # Plot boxplots of the imputed and non-imputed ln-transformed distributions
 ggplot(plot_imp, aes(x = value, y = compound_name, fill = imputation)) +
   geom_boxplot() + 
@@ -147,8 +143,6 @@ The imputed values ranges look sane.
 #| fig-cap: Histograms for imputed compound concentration values for samples adjusted and non-adjusted for weight.
 #| fig-width: 17
 #| fig-height: 5
-#| message: false
-#| warning: false
 # Plot compounds concentration values after imputation 
 adj_labs <- c("Non-adjusted", "Adjusted")
 names(adj_labs) <- c("nadjusted", "adjusted")
@@ -172,8 +166,6 @@ e.  **Compounds correlation structure**
 #| fig-cap: Correlation structure for the compounds.
 #| fig-width: 5
 #| fig-height: 5
-#| message: false
-#| warning: false
 # Plot correlations between compounds
 # make function that makes set colors
 col2 <- colorRampPalette(c("#053061", "#2166AC", "#4393C3",
@@ -206,8 +198,6 @@ One additional sample (fakeID15) was indicated by the analytical lab as an outli
 ```{r}
 #| label: fig-pca-ind
 #| fig-cap: PCA-based individual contribution (the quality of the individuals on the factor map).
-#| message: false
-#| warning: false
 # Colour individuals by contribution
 fviz_pca_biplot(res_pca, 
                 col.ind = "cos2",
@@ -226,9 +216,6 @@ After running a PCA, we see that the majority of variability (`r round(summary(r
 ```{r}
 #| label: fig-pca-covariates
 #| fig-cap: PCA analysis with potentially influential factors overlapped.
-#| message: false
-#| warning: false
-
 pca_plots <- list()
 
 for (var in c("batch", "coll_season", "sample_weight", "time_col_analysis")) {

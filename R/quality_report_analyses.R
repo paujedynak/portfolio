@@ -11,7 +11,7 @@ if (!"pacman" %in% installed.packages()[,"Package"]) {
 
 # Install and load packages
 pacman::p_load(car, corrplot, factoextra, ggpubr, here, Hmisc, janitor, 
-               magrittr, mycor, naniar, rio, tidyverse, stats, tableone)
+               magrittr, msm, mycor, NADA, naniar, rio, tidyverse, skimr, stats, tableone)
 
 # Source functions
 source(here("R/functions.R"))
